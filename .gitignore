@@ -6,3 +6,5 @@ __pycache__/
 venv/
 .idea/
 .vscode/
+store.json
+sync_store.js
