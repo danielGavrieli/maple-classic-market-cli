@@ -36,7 +36,7 @@
 ### Clone & Run
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/maple-classic-market-cli.git
+git clone https://github.com/danielGavrieli/maple-classic-market-cli.git
 cd maple-classic-market-cli
 
 # Run the CLI
