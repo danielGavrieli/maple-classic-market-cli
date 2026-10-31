@@ -1,0 +1,3 @@
+# Standard library only for base functionality! No heavy external dependencies required.
+# Optional rich CLI formatting:
+# rich>=13.0.0
