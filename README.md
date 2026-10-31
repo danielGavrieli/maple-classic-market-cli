@@ -1,13 +1,14 @@
 # 🍁 Maple Classic Market CLI (`mscli`)
 
-[**English Guide**](#-english-documentation) | [**מדריך בעברית**](#-מדריך-למשתמש-בעברית)
+[**English Guide**](#-english-documentation) | [**מדריך בעברית**](#-מדריך-למשתמש-בעברית) | [**🤖 Agentic Guide (AGENT.md)**](AGENT.md)
 
 ---
 
 ## 🇮🇱 מדריך למשתמש בעברית
 
-כלי שורת פקודה (CLI) עצמאי, מהיר ומודולרי למסחר ב-**MapleStory Classic World**.  
-הכלי מצליב בזמן אמת נתונים ציבוריים משני מאגרי המידע המובילים של המשחק: **MeowDB** ו-**MesoWatch**.
+כלי שורת פקודה (CLI) ו-SDK עצמאי, מהיר ומודולרי למסחר ב-**MapleStory Classic World**.  
+הכלי נבנה במיוחד לשימוש של בני אדם ושל **סוכני בינה מלאכותית (AI Agents כגון Claude Code, Cursor, Codex, Windsurf)**.  
+הוא מצליב בזמן אמת נתונים ציבוריים משני מאגרי המידע המובילים של המשחק: **MeowDB** ו-**MesoWatch**.
 
 ---
 
@@ -22,8 +23,35 @@
 ### 🚀 יתרונות ופיצ'רים מרכזיים
 1. **מנוע כפול (Dual-Engine):** חיפוש משולב גם ב-MeowDB וגם ב-MesoWatch במקביל בפחות משנייה אחת.
 2. **איתור חנויות מדויק:** חשיפת הצ'אנל (`Channel`) ומספר החדר ב-FM (`FM Room`) שבו נמצא החפץ והמוכר.
-3. **סורק ארביטראז' חכם:** סריקה מהירה של חנויות שנפתחו לאחרונה, איתור חפצים שנמכרים במחירי רצפה מתחת למחיר השוק, וחישוב רווח נקי אוטומטי (כולל ניכוי 3% מס FM).
-4. **אפס התקנות כבדות:** פועל על בסיס ספריית הסטנדרט של Python בלבד. ללא צורך בהתקנת חבילות צד שלישי או בסיסי נתונים.
+3. **סורק ארביטראז' חכם:** סריקה מהירה של חנויות שנפתחו לאחרונה, איתור חפצים במחירי רצפה, וחישוב רווח נקי אוטומטי (כולל ניכוי 3% מס FM).
+4. **תמיכה מלאה באייג'נטים (Agent-Ready):** פלט מובנה ב-`--json` וייבוא ישיר ב-Python ללא צורך בהרצת תהליכים נפרדים.
+5. **אפס התקנות כבדות:** פועל על בסיס ספריית הסטנדרט של Python בלבד.
+
+---
+
+### 🤖 הפעלה ע"י סוכני AI (Cursor, Claude, Codex)
+סוכני AI יכולים להפעיל את הכלי ישירות בשתי צורות:
+
+#### 1. ייבוא ישיר כספריית Python (הכי מהיר לאייג'נטים):
+```python
+from mscli import compare_item, scan_arbitrage
+
+# הצלבת מחירים מיידית
+data = compare_item("Meba")
+print(data['mesowatch']['medianPrice'])
+
+# סריקת מציאות שוק
+deals = scan_arbitrage(budget=150000, min_profit=5000)
+```
+
+#### 2. קבלת פלט JSON נקי ב-CLI באמצעות דגל `--json`:
+```bash
+python main.py compare "Meba" --json
+python main.py scan --budget 100000 --json
+python main.py mesowatch "Work Gloves" --json
+python main.py audit "Steel Titans" --json
+```
+📘 **למדריך המלא לסוכני AI, סכמות ה-JSON והוראות Prompting ראו: [AGENT.md](AGENT.md)**.
 
 ---
 
@@ -34,7 +62,7 @@
   *(חשוב לסמן ב-V את האפשרות "Add Python to PATH" בעת ההתקנה).*
 
 #### שלב 2: הורדת הפרויקט
-פתח את הטרמינל (Command Prompt / PowerShell / Terminal) והרץ:
+פתח את הטרמינל והרץ:
 ```bash
 git clone https://github.com/danielGavrieli/maple-classic-market-cli.git
 cd maple-classic-market-cli
@@ -52,10 +80,8 @@ python main.py --help
 ### 🛠️ מדריך הפקודות והשימוש
 
 #### 1. `compare` — הצלבת מחירים כפולה בין שני האתרים
-משווה בין נתוני MesoWatch ל-MeowDB ומציג את החדר והמחיר הכי זול שקיים:
 ```bash
 python main.py compare "Meba"
-python main.py compare "Work Gloves"
 ```
 **דוגמת פלט:**
 ```text
@@ -78,7 +104,6 @@ Cross-engine analysis completed in 0.49s.
 ```
 
 #### 2. `scan` — סורק מציאות וארביטראז' ב-Free Market
-סורק את כל החנויות האחרונות שנפתחו ומאתר חפצים שנמכרים במחיר זול משמעותית ממחיר השוק:
 ```bash
 # סריקת ברירת מחדל (תקציב עד 150k, רווח מינימלי 5k, תשואה 20%)
 python main.py scan
@@ -86,22 +111,14 @@ python main.py scan
 # סריקה ממוקדת לחפצים זולים (עד 50,000 מזוס)
 python main.py scan --budget 50000 --min-profit 3000 --min-pct 25 --category equip
 ```
-* **פרמטרים לבחירה:**
-  * `--budget <מספר>`: תקציב מקסימלי לקניית חפץ (ברירת מחדל: 150,000).
-  * `--min-profit <מספר>`: רווח נקי מינימלי במזוס לאחר מס (ברירת מחדל: 5,000).
-  * `--min-pct <אחוז>`: אחוז רווח מינימלי להשקעה (ROI).
-  * `--category <all|equip|etc|scroll>`: סינון לפי סוג חפץ (ציוד, מגילות, חומרי Etc).
-  * `--pages <מספר>`: כמות עמודי שוק לסריקה מהירה (ברירת מחדל: 6).
 
 #### 3. `mesowatch` — בדיקת חנויות וטווחי מחירים ב-MesoWatch
-מציג את החנויות הפעילות ביותר, מיקומים ומחירי חציון:
 ```bash
 python main.py mesowatch "Claw Attack"
 python main.py mesowatch "Pan Lid"
 ```
 
 #### 4. `audit` — בדיקת סטטים מדויקים ומגילות ב-MeowDB
-בודק סטטים ספציפיים שגולגלו על נשקים ושריונות (WATK, STR, DEX, INT, LUK וסלוטים פנויים):
 ```bash
 python main.py audit "Steel Titans"
 python main.py audit "Mithril Titans"
@@ -115,7 +132,8 @@ python main.py audit "Mithril Titans"
 
 ## 🇬🇧 English Documentation
 
-An autonomous, ultra-fast, modular Command Line Interface (CLI) for **MapleStory Classic World** trading and market analysis.  
+An autonomous, ultra-fast, modular Command Line Interface (CLI) and Python SDK for **MapleStory Classic World** trading and market analysis.  
+Engineered for both human merchants and **autonomous AI agents (Claude Code, Cursor, Codex, Windsurf)**.  
 It cross-references real-time market streams from both **MeowDB** and **MesoWatch** in parallel.
 
 ---
@@ -132,7 +150,32 @@ It cross-references real-time market streams from both **MeowDB** and **MesoWatc
 * **Dual-Engine Architecture:** Real-time cross-referencing between MeowDB and MesoWatch in sub-second responses.
 * **FM Location Finder:** Pinpoint the exact **Channel & FM Room** for any listed item and seller.
 * **Automated Arbitrage Radar:** Multi-threaded parallel scanner that spots undervalued items in recently opened shops and computes net profits (including 3% FM merchant tax deduction).
-* **Zero Heavy Dependencies:** Runs entirely on the Python Standard Library. No external packages or SQL databases required.
+* **Agent-Ready Design:** Pure machine-parseable `--json` mode + clean Python SDK interface for direct imports.
+* **Zero Heavy Dependencies:** Runs entirely on the Python Standard Library.
+
+---
+
+### 🤖 Agentic & Autonomous Integration (AI Agents)
+
+AI coding and gaming agents (Claude Code, Cursor, Codex, Windsurf) can interact with this repository in two ways:
+
+#### Option 1: Direct Python Import (Zero Overhead)
+```python
+from mscli import compare_item, scan_arbitrage
+
+res = compare_item("Work Gloves")
+print(res["mesowatch"]["medianPrice"])
+```
+
+#### Option 2: CLI Structured JSON (`--json`)
+```bash
+python main.py compare "Meba" --json
+python main.py scan --budget 150000 --json
+python main.py mesowatch "Pan Lid" --json
+python main.py audit "Steel Titans" --json
+```
+
+📘 **For the full Agentic Specification, prompt snippets, and JSON schemas, see: [AGENT.md](AGENT.md)**.
 
 ---
 
@@ -161,28 +204,21 @@ python main.py --help
 #### 1. Cross-Reference Platforms (`compare`)
 ```bash
 python main.py compare "Meba"
-python main.py compare "Work Gloves"
 ```
 
 #### 2. Arbitrage Deal Radar (`scan`)
 ```bash
-# Default scan (150k budget, 5k min net profit, 20% ROI)
-python main.py scan
-
-# Targeted scan for items under 50,000 mesos
-python main.py scan --budget 50000 --min-profit 3000 --min-pct 25 --category equip
+python main.py scan --budget 150000 --min-profit 5000
 ```
 
 #### 3. MesoWatch Deep Lookup (`mesowatch`)
 ```bash
 python main.py mesowatch "Claw Attack"
-python main.py mesowatch "Pan Lid"
 ```
 
 #### 4. MeowDB Rolled Stats Audit (`audit`)
 ```bash
 python main.py audit "Steel Titans"
-python main.py audit "Mithril Titans"
 ```
 
 ---
