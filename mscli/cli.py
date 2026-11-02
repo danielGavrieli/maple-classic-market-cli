@@ -6,6 +6,7 @@ from .utils import format_mesos, format_full_mesos
 from .meowdb import search_items, get_item_listings, get_item_meta
 from .mesowatch import search_mesowatch
 from .arbitrage import scan_arbitrage
+from .refining import analyze_refining_profit
 
 def compare_item(target):
     """Programmatic dual-engine comparison for AI agents and scripts."""
@@ -53,7 +54,11 @@ def cmd_scan(args):
         min_profit=args.min_profit,
         min_pct=args.min_pct,
         category=args.category,
-        pages=args.pages
+        pages=args.pages,
+        max_age_minutes=getattr(args, 'max_age', 120),
+        min_volume=getattr(args, 'min_volume', 1),
+        job=getattr(args, 'job', None),
+        max_level=getattr(args, 'max_level', None)
     )
     elapsed = round(time.time() - t0, 2)
 
@@ -83,12 +88,15 @@ def cmd_scan(args):
 
     print(f"Found {len(deals)} profitable opportunities in {elapsed}s:\n")
     for i, d in enumerate(deals[:args.limit], 1):
+        fresh_tag = f"[{d.get('freshness', 'WARM')}] " if d.get('freshness') else ""
         stats_info = f" | Stats: {d['stats']}" if d.get('stats') else ""
         slots_info = f" | Slots: {d['slots_left']}" if d.get('slots_left') is not None else ""
-        print(f"[{i}] {d['item_name']} (Ch {d['channel']} FM {d['fm_room']})")
+        roll_info = f" | {d['roll_evaluation']}" if d.get('roll_evaluation') else ""
+        vol_info = f" | 24h Vol: {d['sales_24h']}" if d.get('sales_24h') is not None else ""
+        print(f"[{i}] {fresh_tag}{d['item_name']} (Ch {d['channel']} FM {d['fm_room']})")
         print(f"    Buy for: {d['buy_price']:,} mesos | Sell target: {d['sell_target']:,} mesos")
         print(f"    Net Profit: +{d['net_profit']:,} mesos ({d['roi_pct']}% ROI after 3% tax)")
-        print(f"    Seller: @{d['seller']}{stats_info}{slots_info}")
+        print(f"    Seller: @{d['seller']}{stats_info}{slots_info}{roll_info}{vol_info}")
         print(f"    ---------------------------------------------------")
 
 def cmd_audit(args):
@@ -374,6 +382,31 @@ def cmd_sync_store(args):
     print(f"3. Paste the contents of '{out_file}' and press Enter.")
     print(f"4. The script will automatically cancel all old listings and publish the new ones!")
 
+def cmd_refining(args):
+    t0 = time.time()
+    results = analyze_refining_profit()
+    elapsed = round(time.time() - t0, 2)
+
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            'success': True,
+            'elapsedSeconds': elapsed,
+            'count': len(results),
+            'recipes': results
+        }, ensure_ascii=False, indent=2))
+        return
+
+    print(f"\n=======================================================")
+    print(f"  Maple Classic Ore Refining Arbitrage (Ores vs Ingots)")
+    print(f"=======================================================\n")
+    for r in results:
+        status_sym = "✅" if r['recommendation'] == 'REFINE' else "❌"
+        print(f"{status_sym} {r['recipe']} (Cost: {r['crafting_cost']:,} mesos | Net Sell: {int(r['ingot_price'] * 0.97):,} mesos)")
+        print(f"   Ore: {r['ore_name']} @ {r['ore_price']:,} mesos ({r['ore_sales_24h']} sales/24h)")
+        print(f"   Ingot: {r['ingot_price']:,} mesos ({r['ingot_sales_24h']} sales/24h)")
+        print(f"   Net Profit per Craft: {r['net_profit_per_craft']:+,} mesos -> {r['recommendation']}")
+        print(f"   ---------------------------------------------------")
+
 def main():
     parser = argparse.ArgumentParser(
         prog="mscli",
@@ -389,6 +422,10 @@ def main():
     p_scan.add_argument('--category', type=str, default='all', choices=['all', 'equip', 'etc', 'scroll'])
     p_scan.add_argument('--pages', type=int, default=6, help='Number of browse pages to scan')
     p_scan.add_argument('--limit', type=int, default=10, help='Max deals to display')
+    p_scan.add_argument('--max-age', type=int, default=120, help='Max age of listing in minutes (freshness decay)')
+    p_scan.add_argument('--min-volume', type=int, default=1, help='Minimum 24h sales volume from MesoWatch catalog')
+    p_scan.add_argument('--job', type=str, default=None, help='Filter gear by job class (e.g. thief, warrior, mage)')
+    p_scan.add_argument('--max-level', type=int, default=None, help='Max equip level requirement')
     p_scan.add_argument('--json', action='store_true', help='Output raw JSON for agent / programmatic consumption')
     p_scan.set_defaults(func=cmd_scan)
 
@@ -423,6 +460,11 @@ def main():
     p_sync.add_argument('--out', type=str, default='sync_store.js', help='Output javascript file name')
     p_sync.add_argument('--json', action='store_true', help='Output raw JSON confirmation')
     p_sync.set_defaults(func=cmd_sync_store)
+
+    # refining
+    p_ref = subparsers.add_parser('refining', help='Analyze ore refining margins (raw ores vs refined ingots)')
+    p_ref.add_argument('--json', action='store_true', help='Output raw JSON for agent / programmatic consumption')
+    p_ref.set_defaults(func=cmd_refining)
 
     if len(sys.argv) == 1:
         parser.print_help()
