@@ -24,13 +24,19 @@ def browse_listings(page=1, max_price=None, item_type=None, sort="newest"):
     data = fetch_json(url)
     return data.get('rows', []) if data else []
 
-def get_item_listings(item_id):
+def get_item_listings(item_id, include_meta=False):
     url = f"{BASE_URL}/market-listings?itemId={item_id}&offers=1"
     data = fetch_json(url)
     if not data:
-        return []
+        return [] if not include_meta else {'listings': [], 'completed': [], 'summary': {}}
     if isinstance(data, list):
-        return data
+        return data if not include_meta else {'listings': data, 'completed': [], 'summary': {}}
+    if include_meta:
+        return {
+            'listings': data.get('listings', data.get('rows', [])),
+            'completed': data.get('completed', []),
+            'summary': data.get('summary', {})
+        }
     return data.get('listings', data.get('rows', []))
 
 def get_item_meta(item_id):
